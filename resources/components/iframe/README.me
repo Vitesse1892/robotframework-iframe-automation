@@ -1,0 +1,123 @@
+Deze README is bedoeld als praktische handleiding voor ontwikkelaars en testers die nog weinig ervaring hebben met iFrames.
+Omdat een iFrame een eigen documentcontext heeft, is het in Chrome DevTools niet mogelijk om met één reguliere CSS- of 
+XPath-selector vanuit het hoofddocument rechtstreeks een element binnen een iFrame te selecteren.
+
+Deze handleiding laat zien hoe je de juiste iFrame-context selecteert en vervolgens met eenvoudige 
+JavaScript-commando's elementen kunt vinden, uitlezen en controleren. Zo kunnen ook minder ervaren gebruikers 
+de locators in frame_counting.resource eenvoudig begrijpen en valideren.
+
+# Frame Counting – Locator Reference
+
+This component automates the Flight Status and Hotel Availability
+widgets embedded in separate iframes.
+
+## Inspecting iframe elements
+
+1. Open Chrome DevTools → Console.
+2. Select the appropriate iframe context:
+   - `flight-status`
+   - `hotel-availability`
+3. Execute the JavaScript snippets below.
+
+> All selectors are evaluated within the selected iframe.
+> The CSS selectors correspond to those used in `frame_counting.resource`.
+
+## Full table
+console.table(
+  [...document.querySelectorAll('p:has(strong)')].map(row => {
+    const number = row.querySelector('strong').textContent.trim();
+    const route = row.querySelector('span:first-child').textContent
+      .replace(number, '')
+      .trim();
+    const status = row.querySelector('span:last-child').textContent.trim();
+
+    return {
+      flight: number,
+      route: route,
+      status: status
+    };
+  })
+);
+
+## Flight Status
+
+### Widget title
+
+```javascript
+document.querySelector('p.wh')?.textContent.trim()
+```
+
+### Flight count
+
+```javascript
+document.querySelectorAll('p:has(strong)').length
+```
+
+### Flight numbers
+
+```javascript
+[...document.querySelectorAll('strong')].map(el => el.textContent.trim())
+```
+
+### Flight routes
+
+```javascript
+[...document.querySelectorAll('p:has(strong) > span:first-child')]
+  .map(el => el.textContent.trim())
+```
+
+Note: Route text also contains the flight number.
+
+### Flight statuses
+
+```javascript
+[...document.querySelectorAll('p:has(strong) > span:last-child')]
+  .map(el => el.textContent.trim())
+```
+
+## Hotel Availability
+
+Switch the Console context to `hotel-availability`.
+
+### Widget title
+
+```javascript
+document.querySelector('p.wh')?.textContent.trim()
+```
+
+### Hotel count
+
+```javascript
+document.querySelectorAll('p:has(strong)').length
+```
+
+### Hotel names
+
+```javascript
+[...document.querySelectorAll('strong')].map(el => el.textContent.trim())
+```
+
+### Room availability
+
+```javascript
+[...document.querySelectorAll('p:has(strong) > span:last-child')]
+  .map(el => el.textContent.trim())
+```
+
+## Robot Framework Browser Library
+
+Browser Library uses `>>>` to access elements inside an iframe.
+
+Example:
+
+```robotframework
+${FLIGHT_FRAME}    iframe[data-testid="frame-flight-status"]
+${FLIGHT_ROWS}     p:has(strong)
+```
+
+```robotframework
+${count}=    Get Element Count    ${FLIGHT_FRAME} >>> ${FLIGHT_ROWS}
+```
+
+The iframe selector identifies the frame, while the element selector
+identifies the content inside it.
